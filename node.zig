@@ -1,4 +1,7 @@
 const std = @import("std");
+
+const meta = @import("meta.zig");
+
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 
@@ -59,12 +62,12 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         pub fn search(self: Self, key: K) SearchResult {
             var i: usize = 0;
             while (i < self.len) : (i += 1) {
-                if (key == self.keys[i]) {
+                if (meta.eq(key, self.keys[i])) {
                     return SearchResult{
                         .found = true,
                         .index = i,
                     };
-                } else if (key < self.keys[i]) {
+                } else if (meta.lt(key, self.keys[i])) {
                     return .{
                         .found = false,
                         .index = i,
@@ -397,7 +400,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         fn assertValidityExceptLength(self: *const Self) void {
             // Keys increasing
             for (self.keys[0 .. self.len - 1]) |_, i| {
-                assert(self.keys[i] < self.keys[i + 1]);
+                assert(meta.lt(self.keys[i], self.keys[i + 1]));
             }
 
             // Number of edges
@@ -420,11 +423,11 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
             for (self.keys[0..self.len]) |key, i| {
                 const left_edge = self.edges[i].?;
                 const imm_left_key = left_edge.keys[left_edge.len - 1];
-                assert(key > imm_left_key);
+                assert(meta.gt(key, imm_left_key));
 
                 const right_edge = self.edges[i + 1].?;
                 const imm_right_key = right_edge.keys[0];
-                assert(key < imm_right_key);
+                assert(meta.lt(key, imm_right_key));
             }
         }
 

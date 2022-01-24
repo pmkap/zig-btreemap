@@ -424,3 +424,39 @@ test {
 
     try testing.expect(tree.isEmpty());
 }
+
+test "structs as keys" {
+    const Car = struct {
+        power: i32,
+        pub fn lt(a: @This(), b: @This()) bool {
+            return a.power < b.power;
+        }
+        pub fn eq(a: @This(), b: @This()) bool {
+            return a.power == b.power;
+        }
+    };
+
+    const n = 50;
+    var cars = std.ArrayList(Car).init(testing.allocator);
+    defer cars.deinit();
+
+    var prng = std.rand.DefaultPrng.init(0);
+    const random = prng.random();
+
+    var i: u32 = 0;
+    while (i < n) : (i += 1) {
+        var power: i32 = @intCast(i32, random.int(u8)) + 100;
+        cars.append(Car{ .power = power }) catch unreachable;
+    }
+
+    var tree = BTreeMap(Car, bool).init(testing.allocator);
+    defer tree.deinit() catch unreachable;
+
+    for (cars.items) |j| {
+        _ = try tree.fetchPut(j, true);
+    }
+
+    for (cars.items) |j| {
+        _ = try tree.fetchRemove(j);
+    }
+}
