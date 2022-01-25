@@ -160,7 +160,6 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
             // Traverse tree until we find the key or hit bottom.
             // Build a stack to remember the path
             var current = self.root;
-            var out: ?KV = null;
             var search_result: SearchResult = undefined;
             var found_key_ptr: ?*K = null;
             var found_value_ptr: ?*V = null;
@@ -170,32 +169,16 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
                     // Found! Remember pointers to key and value to swap later.
                     found_key_ptr = &node.keys[search_result.index];
                     found_value_ptr = &node.values[search_result.index];
-                    out = .{ .key = found_key_ptr.?.*, .value = found_value_ptr.?.* };
-
-                    if (node.isLeaf()) {
-                        try stack.append(.{
-                            .node = node,
-                            .index = search_result.index,
-                        });
-                        current = node.edges[search_result.index];
-                    } else {
-                        // Set index to right side of the the found key in order
-                        // to find its inorder successor when we continue down the tree.
-                        try stack.append(.{
-                            .node = node,
-                            .index = search_result.index + 1,
-                        });
-                        current = node.edges[search_result.index + 1];
-                    }
-                    break;
-                } else {
-                    // Not found, push to stack and go deeper.
-                    try stack.append(.{
-                        .node = node,
-                        .index = search_result.index,
-                    });
-                    current = node.edges[search_result.index];
+                    // If not reached leaf, increment index in order to find the
+                    // found key's inorder successor when we continue down the tree.
+                    if (!node.isLeaf()) search_result.index += 1;
                 }
+                try stack.append(.{
+                    .node = node,
+                    .index = search_result.index,
+                });
+                current = node.edges[search_result.index];
+                if (search_result.found) break;
             } else {
                 // Key not found.
                 return null;
@@ -215,6 +198,7 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
             var current_stack = stack.pop();
 
             // Swap the KV for deletion with its inorder successor.
+            var out: KV = .{ .key = found_key_ptr.?.*, .value = found_value_ptr.?.* };
             found_key_ptr.?.* = current_stack.node.keys[current_stack.index];
             found_value_ptr.?.* = current_stack.node.values[current_stack.index];
 
@@ -245,7 +229,9 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
                 }
 
                 if (current_stack.node == self.root) {
+                    // We reached the root.
                     if (self.root.?.len == 0) {
+                        // If root is empty, replace with merged node.
                         const new_root = current_stack.node.edges[0].?;
                         self.allocator.destroy(self.root.?);
                         self.root.? = new_root;
@@ -419,7 +405,13 @@ test {
     try tree.assertValidity();
 
     random.shuffle(i16, keys.items);
-    for (keys.items) |j| _ = try tree.fetchRemove(j);
+    for (keys.items) |j| {
+        const out = try tree.fetchRemove(j);
+        if (out) |u| {
+            try testing.expect(u.key == j);
+            try testing.expect(u.value == j);
+        }
+    }
     _ = try tree.fetchRemove(11111);
 
     try testing.expect(tree.isEmpty());

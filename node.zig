@@ -81,8 +81,8 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         }
 
         /// Insert KVE if node has room. Return null in this case.
-        /// If node is full, split of the right part into a new node
-        /// and return this new node together with the KVE.
+        /// If node is full, take out the median KV and split off the the right part
+        /// into a new node and return this new node together with the median KV.
         pub fn insertOrSplit(
             self: *Self,
             allocator: Allocator,
