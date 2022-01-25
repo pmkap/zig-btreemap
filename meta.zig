@@ -11,6 +11,9 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
             return a == b;
         },
         .Struct => {
+            if (!@hasDecl(T, "eq")) {
+                @compileError("An 'eq' comparison method has to implemented for Type '" ++ @typeName(T) ++ "'");
+            }
             return T.eq(a, b);
         },
         .Array => {
@@ -57,6 +60,9 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             return a < b;
         },
         .Struct => {
+            if (!@hasDecl(T, "lt")) {
+                @compileError("A 'lt' comparison method has to implemented for Type '" ++ @typeName(T) ++ "'");
+            }
             return T.lt(a, b);
         },
         .Array => {
