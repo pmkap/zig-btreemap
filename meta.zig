@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 const expect = std.testing.expect;
 
 /// Similiar to std.meta.eql but pointers are followed.
@@ -37,7 +38,16 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
                         if (!eq(a[i], b[i])) return false;
                     return true;
                 },
-                .Many => @compileError("Cannot compare many-item pointer to unknown number of items"),
+                .Many => {
+                    if (info.sentinel) {
+                        if (std.mem.len(a) != std.mem.len(b)) return false;
+                        var i: usize = 0;
+                        while (i < std.mem.len(a)) : (i += 1)
+                            if (!eq(a[i], b[i])) return false;
+                        return true;
+                    }
+                    @compileError("Cannot compare many-item pointer to unknown number of items without sentinel value");
+                },
                 .C => @compileError("Cannot compare C pointers"),
             }
         },
@@ -66,15 +76,15 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             return T.lt(a, b);
         },
         .Array => {
-            for (a[0 .. a.len - 1]) |_, i|
-                if (!lt(a[i], b[i]) and !eq(a[i], b[i])) return false;
-            return a[a.len - 1] < b[a.len - 1];
+            for (a) |_, i|
+                if (lt(a[i], b[i])) return true;
+            return false;
         },
         .Vector => |info| {
             var i: usize = 0;
-            while (i < info.len - 1) : (i += 1)
-                if (!lt(a[i], b[i]) and !eq(a[i], b[i])) return false;
-            return a[info.len - 1] < b[info.len - 1];
+            while (i < info.len) : (i += 1)
+                if (lt(a[i], b[i])) return true;
+            return false;
         },
         .Pointer => |info| {
             switch (info.size) {
@@ -82,11 +92,19 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
                 .Slice => {
                     const n = std.math.min(a.len, b.len);
                     for (a[0..n]) |_, i|
-                        if (!lt(a[i], b[i]) and !eq(a[i], b[i])) return false;
+                        if (lt(a[i], b[i])) return true;
                     return lt(a.len, b.len);
                 },
-                .Many => @compileError("Cannot compare many-item pointer to unknown number of items"),
-                // TODO: Maybe compare sentinel-terminated pointers.
+                .Many => {
+                    if (info.sentinel) {
+                        const n = std.math.min(std.mem.len(a), std.mem.len(b));
+                        var i: usize = 0;
+                        while (i < n) : (i += 1)
+                            if (lt(a[i], b[i])) return true;
+                        return lt(std.mem.len(a), std.mem.len(b));
+                    }
+                    @compileError("Cannot compare many-item pointer to unknown number of items without sentinel value");
+                },
                 .C => @compileError("Cannot compare C pointers"),
             }
         },
@@ -113,8 +131,22 @@ pub fn ge(a: anytype, b: @TypeOf(a)) bool {
 }
 
 test "numerals" {
+    try expect(eq(1.0, 1.0));
+    try expect(!eq(1.0, 1.1));
+
     try expect(lt(1.0, 2.0));
+    try expect(!lt(1, 1));
     try expect(!lt(2, 1));
+}
+
+test "Arrays" {
+    try expect(eq("abc", "abc"));
+    try expect(!eq("abc", "abb"));
+
+    try expect(lt("ab", "ba"));
+    try expect(lt("aaa", "aab"));
+    try expect(!lt("aaa", "aaa"));
+    try expect(!lt("aab", "aaa"));
 }
 
 test "structs" {
@@ -123,53 +155,43 @@ test "structs" {
         pub fn lt(a: @This(), b: @This()) bool {
             return a.power < b.power;
         }
+        pub fn eq(a: @This(), b: @This()) bool {
+            return a.power == b.power;
+        }
     };
 
     var car1 = Car{ .power = 100 };
     var car2 = Car{ .power = 200 };
 
+    try expect(eq(car1, car1));
+    try expect(!eq(car1, car2));
+
     try expect(lt(car1, car2));
-    try expect(!lt(car2, car1));
-}
-
-test "Arrays" {
-    try expect(eq([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 3 }));
-    try expect(!eq([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 4 }));
-
-    try expect(lt([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 4 }));
-    try expect(!lt([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 3 }));
-    try expect(!lt([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 2 }));
-
-    try expect(le([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 4 }));
-    try expect(le([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 3 }));
-    try expect(!le([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 2 }));
-
-    try expect(gt([_]u8{ 1, 2, 5 }, [_]u8{ 1, 2, 4 }));
-    try expect(!gt([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 3 }));
-    try expect(!gt([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 4 }));
-
-    try expect(ge([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 3 }));
-    try expect(ge([_]u8{ 1, 2, 4 }, [_]u8{ 1, 2, 3 }));
-    try expect(!ge([_]u8{ 1, 2, 3 }, [_]u8{ 1, 2, 4 }));
+    try expect(!lt(car1, car1));
 }
 
 test "Slices" {
-    var a = [_]u8{ 1, 2, 3, 1, 2, 3, 4, 7, 8, 9 };
-    var zero: usize = 0;
-    //var one: usize = 1;
-    var two: usize = 2;
-    var three: usize = 3;
-    var five: usize = 5;
-    try expect(lt(a[zero..3], a[zero..4]));
-    try expect(eq(a[zero..3], a[three..6]));
-    try expect(!eq(a[zero..3], a[three..7]));
-    try expect(gt(a[two..3], a[zero..]));
-    try expect(ge(a[five..], a[two..]));
-    try expect(!le(a[two..], a[zero..]));
+    var o: usize = 0;
+    assert(@TypeOf("abc"[o..]) == [:0]const u8);
+
+    try expect(eq("abc"[o..], "abc"));
+    try expect(!eq("abc"[o..], "abb"));
+
+    try expect(lt("aba"[o..], "ba"));
+    try expect(lt("aaa"[o..], "bb"));
+    try expect(!lt("aaa"[o..], "aaa"));
+    try expect(!lt("aab"[o..], "aaa"));
+    try expect(lt("aab"[o..], "aaba"));
+}
+
+test "sentinel terminated pointers" {
+    // TODO
 }
 
 test "Optionals" {
-    // TODO
+    var x: ?i32 = 1;
+    var y: ?i32 = 2;
+    try expect(lt(x, y));
 }
 
 test "Vectors" {
