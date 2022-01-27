@@ -76,14 +76,28 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             return T.lt(a, b);
         },
         .Array => {
-            for (a) |_, i|
-                if (lt(a[i], b[i])) return true;
+            for (a) |_, i| {
+                if (lt(a[i], b[i])) {
+                    return true;
+                } else if (eq(a[i], b[i])) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
             return false;
         },
         .Vector => |info| {
             var i: usize = 0;
-            while (i < info.len) : (i += 1)
-                if (lt(a[i], b[i])) return true;
+            while (i < info.len) : (i += 1) {
+                if (lt(a[i], b[i])) {
+                    return true;
+                } else if (eq(a[i], b[i])) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
             return false;
         },
         .Pointer => |info| {
@@ -91,16 +105,30 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
                 .One => return lt(a.*, b.*),
                 .Slice => {
                     const n = std.math.min(a.len, b.len);
-                    for (a[0..n]) |_, i|
-                        if (lt(a[i], b[i])) return true;
+                    for (a[0..n]) |_, i| {
+                        if (lt(a[i], b[i])) {
+                            return true;
+                        } else if (eq(a[i], b[i])) {
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    }
                     return lt(a.len, b.len);
                 },
                 .Many => {
                     if (info.sentinel) {
                         const n = std.math.min(std.mem.len(a), std.mem.len(b));
                         var i: usize = 0;
-                        while (i < n) : (i += 1)
-                            if (lt(a[i], b[i])) return true;
+                        while (i < n) : (i += 1) {
+                            if (lt(a[i], b[i])) {
+                                return true;
+                            } else if (eq(a[i], b[i])) {
+                                continue;
+                            } else {
+                                return false;
+                            }
+                        }
                         return lt(std.mem.len(a), std.mem.len(b));
                     }
                     @compileError("Cannot compare many-item pointer to unknown number of items without sentinel value");
@@ -179,19 +207,21 @@ test "Slices" {
 
     try expect(lt("aba"[o..], "ba"));
     try expect(lt("aaa"[o..], "bb"));
+    try expect(!lt("aba"[o..], "aa"));
     try expect(!lt("aaa"[o..], "aaa"));
-    try expect(!lt("aab"[o..], "aaa"));
+    try expect(lt("aaa"[o..], "aaaa"));
+    try expect(!lt("aaa"[o..], "aa"));
     try expect(lt("aab"[o..], "aaba"));
-}
-
-test "sentinel terminated pointers" {
-    // TODO
 }
 
 test "Optionals" {
     var x: ?i32 = 1;
     var y: ?i32 = 2;
     try expect(lt(x, y));
+}
+
+test "sentinel terminated pointers" {
+    // TODO
 }
 
 test "Vectors" {
