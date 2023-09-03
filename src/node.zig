@@ -363,9 +363,9 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
             );
 
             // shrink original node
-            std.mem.set(K, self.keys[median..], undefined);
-            std.mem.set(V, self.values[median..], undefined);
-            std.mem.set(?*Self, self.edges[median + 1 ..], null);
+            @memset(self.keys[median..], undefined);
+            @memset(self.values[median..], undefined);
+            @memset(self.edges[median + 1 ..], null);
             self.len = median;
 
             return KVE{
@@ -399,7 +399,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         /// This is intended for testing and debugging.
         fn assertValidityExceptLength(self: *const Self) void {
             // Keys increasing
-            for (self.keys[0 .. self.len - 1]) |_, i| {
+            for (self.keys[0 .. self.len - 1], 0..) |_, i| {
                 assert(meta.lt(self.keys[i], self.keys[i + 1]));
             }
 
@@ -420,7 +420,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
             if (self.isLeaf()) return;
 
             // Edges left smaller and right larger
-            for (self.keys[0..self.len]) |key, i| {
+            for (self.keys[0..self.len], 0..) |key, i| {
                 const left_edge = self.edges[i].?;
                 const imm_left_key = left_edge.keys[left_edge.len - 1];
                 assert(meta.gt(key, imm_left_key));
