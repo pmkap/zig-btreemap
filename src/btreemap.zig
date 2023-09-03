@@ -437,7 +437,7 @@ test "structs as keys" {
 
     var i: u32 = 0;
     while (i < n) : (i += 1) {
-        var power: i32 = @intCast(i32, random.int(u8)) + 100;
+        var power: i32 = @as(i32, random.int(u8)) + 100;
         cars.append(Car{ .power = power }) catch unreachable;
     }
 
