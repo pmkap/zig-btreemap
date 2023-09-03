@@ -18,7 +18,7 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
             return T.eq(a, b);
         },
         .Array => {
-            for (a) |_, i|
+            for (a, 0..) |_, i|
                 if (!eq(a[i], b[i])) return false;
             return true;
         },
@@ -34,7 +34,7 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
                 .One => return eq(a.*, b.*),
                 .Slice => {
                     if (a.len != b.len) return false;
-                    for (a) |_, i|
+                    for (a, 0..) |_, i|
                         if (!eq(a[i], b[i])) return false;
                     return true;
                 },
@@ -76,7 +76,7 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             return T.lt(a, b);
         },
         .Array => {
-            for (a) |_, i| {
+            for (a, 0..) |_, i| {
                 if (lt(a[i], b[i])) {
                     return true;
                 } else if (eq(a[i], b[i])) {
@@ -104,8 +104,8 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             switch (info.size) {
                 .One => return lt(a.*, b.*),
                 .Slice => {
-                    const n = std.math.min(a.len, b.len);
-                    for (a[0..n]) |_, i| {
+                    const n = @min(a.len, b.len);
+                    for (a[0..n], 0..) |_, i| {
                         if (lt(a[i], b[i])) {
                             return true;
                         } else if (eq(a[i], b[i])) {
@@ -118,7 +118,7 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
                 },
                 .Many => {
                     if (info.sentinel) {
-                        const n = std.math.min(std.mem.len(a), std.mem.len(b));
+                        const n = @min(std.mem.len(a), std.mem.len(b));
                         var i: usize = 0;
                         while (i < n) : (i += 1) {
                             if (lt(a[i], b[i])) {
