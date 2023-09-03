@@ -6,7 +6,7 @@ pub fn build(b: *std.build) void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const btreemap_module = b.createModule(.{ //
+    _ = b.addModule("btreemap", .{ //
         .source_file = .{ .path = "src/btreemap.zig" },
     });
 
@@ -16,7 +16,6 @@ pub fn build(b: *std.build) void {
         .target = target,
         .optimize = optimize,
     });
-    main_tests.addModule("btreemap", btreemap_module);
     const run_main_tests = b.addRunArtifact(main_tests);
 
     const test_step = b.step("test", "Run library tests");
