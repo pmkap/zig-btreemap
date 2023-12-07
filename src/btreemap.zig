@@ -198,7 +198,7 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
             var current_stack = stack.pop();
 
             // Swap the KV for deletion with its inorder successor.
-            var out: KV = .{ .key = found_key_ptr.?.*, .value = found_value_ptr.?.* };
+            const out: KV = .{ .key = found_key_ptr.?.*, .value = found_value_ptr.?.* };
             found_key_ptr.?.* = current_stack.node.keys[current_stack.index];
             found_value_ptr.?.* = current_stack.node.values[current_stack.index];
 
@@ -268,7 +268,7 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
                 while (it.topStackItem()) |item| {
                     if (!item.node.isLeaf() and !it.backwards) {
                         // Child exists at index or going forward, go deeper.
-                        var child = item.node.edges[item.index].?;
+                        const child = item.node.edges[item.index].?;
                         try it.stack.append(StackItem{
                             .node = child,
                             .index = 0,
@@ -278,7 +278,7 @@ pub fn BTreeMap(comptime K: type, comptime V: type) type {
                         if (item.index < item.node.len) {
                             // Node is not yet exhausted.
                             // Return KV from Node and increment the node's index.
-                            var out = KV{
+                            const out = KV{
                                 .key = item.node.keys[item.index],
                                 .value = item.node.values[item.index],
                             };
@@ -437,7 +437,7 @@ test "structs as keys" {
 
     var i: u32 = 0;
     while (i < n) : (i += 1) {
-        var power: i32 = @as(i32, random.int(u8)) + 100;
+        const power: i32 = @as(i32, random.int(u8)) + 100;
         cars.append(Car{ .power = power }) catch unreachable;
     }
 

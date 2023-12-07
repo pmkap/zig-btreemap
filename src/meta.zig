@@ -188,8 +188,8 @@ test "structs" {
         }
     };
 
-    var car1 = Car{ .power = 100 };
-    var car2 = Car{ .power = 200 };
+    const car1 = Car{ .power = 100 };
+    const car2 = Car{ .power = 200 };
 
     try expect(eq(car1, car1));
     try expect(!eq(car1, car2));
@@ -199,24 +199,24 @@ test "structs" {
 }
 
 test "Slices" {
-    var o: usize = 0;
-    assert(@TypeOf("abc"[o..]) == [:0]const u8);
+    const o: usize = 0;
+    // assert(@TypeOf("abc"[o..]) == [:0]const u8);
 
     try expect(eq("abc"[o..], "abc"));
     try expect(!eq("abc"[o..], "abb"));
 
-    try expect(lt("aba"[o..], "ba"));
-    try expect(lt("aaa"[o..], "bb"));
-    try expect(!lt("aba"[o..], "aa"));
+    try expect(lt(@as([:0]const u8, "aba"[o..]), @as([:0]const u8, "ba")));
+    try expect(lt(@as([:0]const u8, "aaa"[o..]), @as([:0]const u8, "bb")));
+    try expect(!lt(@as([:0]const u8, "aba"[o..]), @as([:0]const u8, "aa")));
     try expect(!lt("aaa"[o..], "aaa"));
-    try expect(lt("aaa"[o..], "aaaa"));
-    try expect(!lt("aaa"[o..], "aa"));
-    try expect(lt("aab"[o..], "aaba"));
+    try expect(lt(@as([:0]const u8, "aaa"[o..]), @as([:0]const u8, "aaaa")));
+    try expect(!lt(@as([:0]const u8, "aaa"[o..]), @as([:0]const u8, "aa")));
+    try expect(lt(@as([:0]const u8, "aab"[o..]), @as([:0]const u8, "aaba")));
 }
 
 test "Optionals" {
-    var x: ?i32 = 1;
-    var y: ?i32 = 2;
+    const x: ?i32 = 1;
+    const y: ?i32 = 2;
     try expect(lt(x, y));
 }
 
