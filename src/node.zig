@@ -37,7 +37,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         };
 
         pub fn createEmpty(allocator: Allocator) !*Self {
-            var out = try allocator.create(Self);
+            const out = try allocator.create(Self);
             out.* = Self{
                 .keys = [_]K{undefined} ** (2 * B - 1),
                 .values = [_]V{undefined} ** (2 * B - 1),
@@ -136,12 +136,12 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
                 .edge = self.edges[index + 1],
             };
 
-            std.mem.copy(
+            std.mem.copyForwards(
                 K,
                 self.keys[index..],
                 self.keys[index + 1 .. self.len],
             );
-            std.mem.copy(
+            std.mem.copyForwards(
                 V,
                 self.values[index..],
                 self.values[index + 1 .. self.len],
@@ -151,7 +151,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
             self.values[self.len - 1] = undefined;
 
             if (!self.isLeaf()) {
-                std.mem.copy(
+                std.mem.copyForwards(
                     ?*Self,
                     self.edges[index + 1 ..],
                     self.edges[index + 2 .. self.len + 1],
@@ -177,12 +177,12 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
                 .edge = self.edges[0],
             };
 
-            std.mem.copy(
+            std.mem.copyForwards(
                 K,
                 self.keys[0..],
                 self.keys[1..self.len],
             );
-            std.mem.copy(
+            std.mem.copyForwards(
                 V,
                 self.values[0..],
                 self.values[1..self.len],
@@ -192,7 +192,7 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
             self.values[self.len - 1] = undefined;
 
             if (!self.isLeaf()) {
-                std.mem.copy(
+                std.mem.copyForwards(
                     ?*Self,
                     self.edges[0..],
                     self.edges[1 .. self.len + 1],
@@ -352,10 +352,10 @@ pub fn Node(comptime K: type, comptime V: type, comptime B: u32) type {
         /// These parts are erased from the original node.
         fn split(self: *Self, allocator: Allocator) !KVE {
             const median: usize = B - 1;
-            var new_key = self.keys[median];
-            var new_value = self.values[median];
+            const new_key = self.keys[median];
+            const new_value = self.values[median];
 
-            var new_node = try Self.createFromSlices(
+            const new_node = try Self.createFromSlices(
                 allocator,
                 self.keys[median + 1 .. self.len],
                 self.values[median + 1 .. self.len],
