@@ -1,18 +1,18 @@
 const std = @import("std");
 
-pub fn build(b: *std.build) void {
+pub fn build(b: *std.Build) void {
     // Standard optimize option allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    _ = b.addModule("btreemap", .{ //
-        .source_file = .{ .path = "src/btreemap.zig" },
+    _ = b.addModule("btreemap", .{
+        .root_source_file = b.path("src/btreemap.zig"),
     });
 
-    const main_tests = b.addTest(.{ //
+    const main_tests = b.addTest(.{
         .name = "zig btreemap tests",
-        .root_source_file = .{ .path = "src/btreemap.zig" },
+        .root_source_file = b.path("src/btreemap.zig"),
         .target = target,
         .optimize = optimize,
     });
