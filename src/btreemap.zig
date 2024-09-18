@@ -371,7 +371,7 @@ test {
     var keys = std.ArrayList(i16).init(testing.allocator);
     defer keys.deinit();
 
-    var prng = std.rand.DefaultPrng.init(0);
+    var prng = std.Random.DefaultPrng.init(0);
     const random = prng.random();
 
     var i: i16 = 0;
@@ -432,7 +432,7 @@ test "structs as keys" {
     var cars = std.ArrayList(Car).init(testing.allocator);
     defer cars.deinit();
 
-    var prng = std.rand.DefaultPrng.init(0);
+    var prng = std.Random.DefaultPrng.init(0);
     const random = prng.random();
 
     var i: u32 = 0;

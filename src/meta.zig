@@ -8,28 +8,28 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
     const T = @TypeOf(a);
 
     switch (@typeInfo(T)) {
-        .Int, .ComptimeInt, .Float, .ComptimeFloat => {
+        .int, .comptime_int, .float, .comptime_float => {
             return a == b;
         },
-        .Struct => {
+        .@"struct" => {
             if (!@hasDecl(T, "eq")) {
                 @compileError("An 'eq' comparison method has to implemented for Type '" ++ @typeName(T) ++ "'");
             }
             return T.eq(a, b);
         },
-        .Array => {
+        .array => {
             for (a, 0..) |_, i|
                 if (!eq(a[i], b[i])) return false;
             return true;
         },
-        .Vector => |info| {
+        .vector => |info| {
             var i: usize = 0;
             while (i < info.len) : (i += 1) {
                 if (!eq(a[i], b[i])) return false;
             }
             return true;
         },
-        .Pointer => |info| {
+        .pointer => |info| {
             switch (info.size) {
                 .One => return eq(a.*, b.*),
                 .Slice => {
@@ -51,7 +51,7 @@ pub fn eq(a: anytype, b: @TypeOf(a)) bool {
                 .C => @compileError("Cannot compare C pointers"),
             }
         },
-        .Optional => {
+        .optional => {
             if (a == null and b == null) return true;
             if (a == null or b == null) return false;
             return eq(a.?, b.?);
@@ -66,16 +66,16 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
     const T = @TypeOf(a);
 
     switch (@typeInfo(T)) {
-        .Int, .ComptimeInt, .Float, .ComptimeFloat => {
+        .int, .comptime_int, .float, .comptime_float => {
             return a < b;
         },
-        .Struct => {
+        .@"struct" => {
             if (!@hasDecl(T, "lt")) {
                 @compileError("A 'lt' comparison method has to implemented for Type '" ++ @typeName(T) ++ "'");
             }
             return T.lt(a, b);
         },
-        .Array => {
+        .array => {
             for (a, 0..) |_, i| {
                 if (lt(a[i], b[i])) {
                     return true;
@@ -87,7 +87,7 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             }
             return false;
         },
-        .Vector => |info| {
+        .vector => |info| {
             var i: usize = 0;
             while (i < info.len) : (i += 1) {
                 if (lt(a[i], b[i])) {
@@ -100,7 +100,7 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
             }
             return false;
         },
-        .Pointer => |info| {
+        .pointer => |info| {
             switch (info.size) {
                 .One => return lt(a.*, b.*),
                 .Slice => {
@@ -136,7 +136,7 @@ pub fn lt(a: anytype, b: @TypeOf(a)) bool {
                 .C => @compileError("Cannot compare C pointers"),
             }
         },
-        .Optional => {
+        .optional => {
             if (a == null or b == null) return false;
             return lt(a.?, b.?);
         },
